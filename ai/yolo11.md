@@ -131,7 +131,7 @@ yolo detect train data=datasets/data.yaml model=yolo11n.pt epochs=100 imgsz=640
 
 {% embed url="https://www.youtube.com/watch?v=prpnvNAp8EU" %}
 
-(2) 检测行人摔倒
+(3) 检测行人摔倒
 
 识别视频中人物，当人物宽 > 高时候判定人物摔倒，算法比较简单，仅供学习：
 

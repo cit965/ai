@@ -34,58 +34,7 @@ YOLO系列的核心思想就是把目标检测转变为一个回归问题，利�
 
 **(5)非最大抑制**(Non-Maximum Suppression, NMS)：在预测的边界框中，可能存在多个相互重叠的框，代表同一个目标。为了消除冗余的边界框，YOLO使用非最大抑制算法，根据置信度和重叠程度筛选出最佳的边界框。
 
-### 实战
-
-#### Predice 【识别图片中的物体】
-
-ultralytics 框架本身给我们提供了一个命令行工具，我们可以用来进行图像识别，只需要一行命令就能识别出图片中的物品：
-
-```sh
-// pip install ultralytics
-
-yolo detect predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg'
-```
-
-<figure><img src="../.gitbook/assets/bus (3).jpg" alt="" width="188"><figcaption><p>原始图片</p></figcaption></figure>
-
-<figure><img src="../.gitbook/assets/bus (4).jpg" alt="" width="188"><figcaption><p>预测后图片</p></figcaption></figure>
-
-Train 【训练自己的模型】
-
-官方给的模型仅仅只能识别几十种物品，如果你想识别特定类别的物品，就要自己训练了，提前准备好数据后，也是一行命令：
-
-```sh
-// data 参数需要指定训练需要的图片集
-// 图片集需要排列成正确的结构，如下
-dataset/
-|- data.yaml
-├── train/
-│   ├── images/
-│   └── labels/
-└── val/
-    ├── images/
-    └── labels/
-
-// data.yaml 中需要指定路径和分类,如下：
-
-############### data.yaml 示例文件 ####################
-// train: C:/x/images
-// val: C:/xx/images
-// test: C:/xxx/images
-
-// nc: 5
-// names: ['0-human', '1-wheelchair', '2-suitcase', '3-stroller', '4-bicycle']
-#######################################################
-
-yolo detect train data=datasets/data.yaml model=yolo11n.pt epochs=100 imgsz=640
-
-```
-
-训练模型最好使用 GPU 训练，用 Cpu 的话很慢，训练完会在当前目录 runs/detect/trains 文件夹下生成 模型，下次用来预测的时候指定该模型即可。
-
-如果你没有本地环境，或者觉得安装 python 依赖比较麻烦，可以参考下面教程 ：
-
-{% embed url="https://www.youtube.com/watch?v=prpnvNAp8EU" %}
+###
 
 ### 任务种类
 
@@ -128,3 +77,120 @@ YOLO11是一个支持多种[计算机视觉](https://www.ultralytics.com/glossar
 定向对象检测比对象检测更进一步，引入了额外的角度来更准确地定位图像中的对象。
 
 定向对象检测器的输出是一组旋转的边界框，精确包围图像中的对象，以及每个框的类标签和置信度分数。当您需要识别场景中感兴趣的对象，但不需要知道对象的确切位置或其确切形状时，对象检测是一个不错的选择。
+
+### 实战
+
+#### (1) Predice 【识别图片中的物体】
+
+ultralytics 框架本身给我们提供了一个命令行工具，我们可以用来进行图像识别，只需要一行命令就能识别出图片中的物品：
+
+```sh
+// pip install ultralytics
+
+yolo detect predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg'
+```
+
+<figure><img src="../.gitbook/assets/bus (3).jpg" alt="" width="188"><figcaption><p>原始图片</p></figcaption></figure>
+
+<figure><img src="../.gitbook/assets/bus (4).jpg" alt="" width="188"><figcaption><p>预测后图片</p></figcaption></figure>
+
+(2)Train 【训练自己的模型】
+
+官方给的模型仅仅只能识别几十种物品，如果你想识别特定类别的物品，就要自己训练了，提前准备好数据后，也是一行命令：
+
+```sh
+// data 参数需要指定训练需要的图片集
+// 图片集需要排列成正确的结构，如下
+dataset/
+|- data.yaml
+├── train/
+│   ├── images/
+│   └── labels/
+└── val/
+    ├── images/
+    └── labels/
+
+// data.yaml 中需要指定路径和分类,如下：
+
+############### data.yaml 示例文件 ####################
+// train: C:/x/images
+// val: C:/xx/images
+// test: C:/xxx/images
+
+// nc: 5
+// names: ['0-human', '1-wheelchair', '2-suitcase', '3-stroller', '4-bicycle']
+#######################################################
+
+yolo detect train data=datasets/data.yaml model=yolo11n.pt epochs=100 imgsz=640
+
+```
+
+训练模型最好使用 GPU 训练，用 Cpu 的话很慢，训练完会在当前目录 runs/detect/trains 文件夹下生成 模型，下次用来预测的时候指定该模型即可。
+
+如果你没有本地环境，或者觉得安装 python 依赖比较麻烦，可以参考下面教程 ：
+
+{% embed url="https://www.youtube.com/watch?v=prpnvNAp8EU" %}
+
+(2) 检测行人摔倒
+
+识别视频中人物，当人物宽 > 高时候判定人物摔倒，算法比较简单，仅供学习：
+
+```python
+# https://github.com/Tech-Watt/Fall-Detection
+import cv2
+import cvzone
+import math
+from ultralytics import YOLO
+
+cap = cv2.VideoCapture('fall.mp4')
+
+model = YOLO('yolov8s.pt')
+
+classnames = []
+with open('classes.txt', 'r') as f:
+    classnames = f.read().splitlines()
+
+
+while True:
+    ret, frame = cap.read()
+    frame = cv2.resize(frame, (980,740))
+
+    results = model(frame)
+
+    for info in results:
+        parameters = info.boxes
+        for box in parameters:
+            x1, y1, x2, y2 = box.xyxy[0]
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+            confidence = box.conf[0]
+            class_detect = box.cls[0]
+            class_detect = int(class_detect)
+            class_detect = classnames[class_detect]
+            conf = math.ceil(confidence * 100)
+
+
+            # implement fall detection using the coordinates x1,y1,x2
+            height = y2 - y1
+            width = x2 - x1
+            threshold  = height - width
+                
+            # 置信度在 80 以上并且物品是人的时候，框出人
+            if conf > 80 and class_detect == 'person':
+                cvzone.cornerRect(frame, [x1, y1, width, height], l=30, rt=6)
+                cvzone.putTextRect(frame, f'{class_detect}', [x1 + 8, y1 - 12], thickness=2, scale=2)
+            # 如果摔倒了，显示 fall detected
+            if threshold < 0:
+                cvzone.putTextRect(frame, 'Fall Detected', [height, width], thickness=2, scale=2)
+            
+            else:pass
+
+
+    cv2.imshow('frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('t'):
+        break
+
+
+cap.release()
+cv2.destroyAllWindows()
+```
+
